@@ -1,0 +1,49 @@
+!.*
+!.git*
+!.editorconfig
+!.dockerignore
+!.pylintrc
+
+
+config/files/
+*/config/files/*
+lib/*
+!public/lib
+precompiled/
+modules/
+db/
+tmp/
+test-result/
+logs/
+*.log
+*~
+dump.rdb
+*.pyc
+
+# idea specific
+*.iml
+*.ipr
+*.iws
+.idea
+.idea/*
+.vscode
+
+# eclipse specific
+eclipse/
+
+# sublime text
+*.sublime-*
+conf/application.conf
+
+# for virtual env
+virtualenv/
+.venv/
+
+# pipenv
+.Pipfile.lock
+
+# setup.py
+dist/
+build/
+*.egg-info/
+
