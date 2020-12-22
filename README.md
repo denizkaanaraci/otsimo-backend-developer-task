@@ -1,18 +1,22 @@
 # otsimo-backend-developer-task
 
+    Database and server configs can be changed in .env file
+    
     build:
         go build -o otsimo-app
     
     run: 
         ./otsimo-app
 
-## docker (multi-stage build)
+## docker 
 
-    build:
+    build (multi-stage):
         docker build -t otsimo-app .
     
     run: 
-        docker run -it --rm -p 8080:8080 -e DBURI=mongodb://ip:port --name otsimo-app otsimo-app
+        docker run -d -p 8080:8080 -e ADDR=0.0.0.0:8080 -e DBURI=mongodb://ip:port --name otsimo-app otsimo-app
+        
+        interactive: docker run -it --rm -p 8080:8080 -e ADDR=0.0.0.0:8080 -e DBURI=mongodb://ip:port --name otsimo-app otsimo-app
 
 ## Functions
 

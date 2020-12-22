@@ -24,10 +24,6 @@ func NewHandler(db *mongo.Database) *Handler {
 }
 
 func (h *Handler) CreateCandidate(candidate *models.Candidate) error {
-	//TODO: """The email format for the candidate should be example@email.xyz.
-	//	Otherwise, the candidate should not be inserted to DB because the only
-	//	way to communicate with the candidate is through email."""
-
 	assigneeID, err := h.GetAssigneeIdByDepartment(candidate.Department)
 
 	// if there is no assignee with this given department
@@ -140,11 +136,22 @@ func (h *Handler) CompleteMeeting(_id string) error {
 
 func (h *Handler) DenyCandidate(_id string) error {
 
+	var candidate models.Candidate
+
 	filter := bson.M{"_id": _id}
+
+	err := h.db.Collection("Candidates").FindOne(context.Background(), filter).Decode(&candidate)
+
+	// if object is empty
+	if err != nil {
+		return errors.New("ID not found in DB, candidate object is empty!")
+	}
+
+	filter = bson.M{"_id": _id}
 	opt := bson.D{
 		{"$set", bson.D{{"status", "Denied"}}},
 	}
-	_, err := h.db.Collection("Candidates").UpdateOne(context.Background(), filter, opt)
+	_, err = h.db.Collection("Candidates").UpdateOne(context.Background(), filter, opt)
 
 	return err
 }

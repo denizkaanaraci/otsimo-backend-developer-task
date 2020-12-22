@@ -32,15 +32,17 @@ func (h *Handler) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	// decode error
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at decoding JSON! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
 	err = candidate.Validate()
 
 	if err != nil {
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
-		log.Println("[ERROR] validating email", err)
+		errStr := fmt.Sprintf("[ERROR] JSON Validation Problem! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
 	// insert candidate model.
@@ -48,10 +50,12 @@ func (h *Handler) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	// create error
 	if err != nil {
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
-		log.Println("[ERROR] error occured at create candidate", err)
+		errStr := fmt.Sprintf("[ERROR] Error occured at create candidate! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
+	log.Println("CreateCandidate is handled successfully!")
 	helper.RespondWithJSON(w, http.StatusOK, candidate)
 }
 
@@ -62,10 +66,14 @@ func (h *Handler) ReadCandidate(w http.ResponseWriter, r *http.Request) {
 	candidate, err := h.cHandler.ReadCandidate(id)
 
 	if err != nil {
-		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
-		log.Println(err.Error())
+		errStr := fmt.Sprintf("[ERROR] Cannot read candidate! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
+
+	log.Println("ReadCandidate is handled successfully!")
+
 	helper.RespondWithJSON(w, http.StatusOK, candidate)
 }
 
@@ -75,11 +83,13 @@ func (h *Handler) DeleteCandidate(w http.ResponseWriter, r *http.Request) {
 	err := h.cHandler.DeleteCandidate(id)
 
 	if err != nil {
-		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
-		log.Println(err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at delete candidate! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
-	helper.RespondWithJSON(w, http.StatusOK, "success")
+	log.Println("DeleteCandidate is handled successfully!")
+	helper.RespondWithJSON(w, http.StatusOK, "Candidate is deleted.")
 }
 
 func (h *Handler) ArrangeMeeting(w http.ResponseWriter, r *http.Request) {
@@ -88,8 +98,9 @@ func (h *Handler) ArrangeMeeting(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&payload)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at decoding JSON! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
 
@@ -100,11 +111,14 @@ func (h *Handler) ArrangeMeeting(w http.ResponseWriter, r *http.Request) {
 	err = h.cHandler.ArrangeMeeting(_id, &nextMeetingTime)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at arrange meeting! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
-	helper.RespondWithJSON(w, http.StatusOK, "success")
+
+	log.Println("ArrangeMeeting is handled successfully!")
+	helper.RespondWithJSON(w, http.StatusOK, "Meeting is arranged.")
 }
 
 func (h *Handler) CompleteMeeting(w http.ResponseWriter, r *http.Request) {
@@ -114,12 +128,14 @@ func (h *Handler) CompleteMeeting(w http.ResponseWriter, r *http.Request) {
 	err := h.cHandler.CompleteMeeting(id)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at complete meeting! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
 
-	helper.RespondWithJSON(w, http.StatusOK, "success")
+	log.Println("CompleteMeeting is handled successfully!")
+	helper.RespondWithJSON(w, http.StatusOK, "Meeting is completed.")
 }
 
 func (h *Handler) DenyCandidate(w http.ResponseWriter, r *http.Request) {
@@ -130,11 +146,13 @@ func (h *Handler) DenyCandidate(w http.ResponseWriter, r *http.Request) {
 	err := h.cHandler.DenyCandidate(_id)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at deny candidate! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
-	helper.RespondWithJSON(w, http.StatusOK, "success")
+	log.Println("DenyCandidate is handled successfully!")
+	helper.RespondWithJSON(w, http.StatusOK, "Candidate is denied.")
 }
 
 func (h *Handler) AcceptCandidate(w http.ResponseWriter, r *http.Request) {
@@ -145,11 +163,13 @@ func (h *Handler) AcceptCandidate(w http.ResponseWriter, r *http.Request) {
 	err := h.cHandler.AcceptCandidate(_id)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at accept candidate! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
-	helper.RespondWithJSON(w, http.StatusOK, "success")
+	log.Println("AcceptCandidate is handled successfully!")
+	helper.RespondWithJSON(w, http.StatusOK, "Candidate is accepted.")
 }
 
 func (h *Handler) FindAssigneeIDByName(w http.ResponseWriter, r *http.Request) {
@@ -160,10 +180,12 @@ func (h *Handler) FindAssigneeIDByName(w http.ResponseWriter, r *http.Request) {
 	assignee, err := h.cHandler.FindAssigneeIDByName(name)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at find assignee id! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
+	log.Println("FindAssigneeIDByName is handled successfully!")
 	helper.RespondWithJSON(w, http.StatusOK, assignee)
 }
 
@@ -173,12 +195,12 @@ func (h *Handler) FindAssigneesCandidates(w http.ResponseWriter, r *http.Request
 	candidates, err := h.cHandler.FindAssigneesCandidates(id)
 
 	if err != nil {
-		log.Println(err.Error())
-		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		errStr := fmt.Sprintf("[ERROR] Error occured at find assigneees candidates! Details: %s", err.Error())
+		log.Println(errStr)
+		helper.RespondWithError(w, http.StatusInternalServerError, errStr)
 		return
 	}
 
-	log.Println(candidates, err)
-
+	log.Println("FindAssigneesCandidates is handled successfully!")
 	helper.RespondWithJSON(w, http.StatusOK, candidates)
 }

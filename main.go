@@ -14,9 +14,11 @@ import (
 	"time"
 )
 
-func Initialize(Addr string) *http.Server {
+func Initialize() *http.Server {
 
-	dbUri, err := goDotEnvVariable("DBURI")
+	dbUri := goDotEnvVariable("DBURI", "mongodb://localhost:27017")
+	Addr:= goDotEnvVariable("ADDR", "0.0.0.0:8080")
+
 	db, err := helper.ConnectDB(dbUri)
 
 	if err != nil {
@@ -36,10 +38,9 @@ func Initialize(Addr string) *http.Server {
 		WriteTimeout: 100 * time.Second, // max time to write response to the client
 		IdleTimeout:  12 * time.Second,  // max time for connections using TCP Keep-Alive
 	}
-
 	return Server
 }
-func goDotEnvVariable(key string) (string, error) {
+func goDotEnvVariable(key string, _default string) (string) {
 
 	// load .env file
 	err := godotenv.Load(".env")
@@ -48,7 +49,12 @@ func goDotEnvVariable(key string) (string, error) {
 		log.Println("Error loading .env file")
 	}
 
-	return os.Getenv(key), err
+	var e = os.Getenv(key)
+
+	if e == "" {
+		return _default
+	}
+	return e
 }
 func initializeRoutes(r *mux.Router, h *handler.Handler) {
 	r.HandleFunc("/candidate/{id}", h.ReadCandidate).Methods("GET")
@@ -68,11 +74,11 @@ func initializeRoutes(r *mux.Router, h *handler.Handler) {
 
 func main() {
 
-	Server := Initialize("localhost:8080")
+	Server := Initialize()
 
 	// start the server
 	go func() {
-		log.Println("Starting server on port 8080")
+		log.Println("Starting server on", Server.Addr)
 
 		err := Server.ListenAndServe()
 		if err != nil {
@@ -90,8 +96,8 @@ func main() {
 	sig := <-c
 	log.Println("Got signal:", sig)
 
-	// gracefully shutdown the server, waiting max 30 seconds for current operations to complete
-	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	// gracefully shutdown the server, waiting max 10 seconds for current operations to complete
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	_ = Server.Shutdown(ctx)
 
 }
