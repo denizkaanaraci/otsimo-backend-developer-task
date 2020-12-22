@@ -1,10 +1,12 @@
-package functions
+package storage
 
 import (
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"log"
 	"otsimo-backend-developer-task/models"
 	"time"
 )
@@ -21,14 +23,14 @@ func NewHandler(db *mongo.Database) *Handler {
 	}
 }
 
-// CreateCandidate (candidate Candidate) (Candidate, error)
-func (h *Handler) CreateCandidate(candidate models.Candidate) error {
+func (h *Handler) CreateCandidate(candidate *models.Candidate) error {
 	//TODO: """The email format for the candidate should be example@email.xyz.
 	//	Otherwise, the candidate should not be inserted to DB because the only
 	//	way to communicate with the candidate is through email."""
 
 	assigneeID, err := h.GetAssigneeIdByDepartment(candidate.Department)
 
+	// if there is no assignee with this given department
 	if err != nil {
 		return err
 	}
@@ -38,14 +40,12 @@ func (h *Handler) CreateCandidate(candidate models.Candidate) error {
 	candidate.Status = "Pending"
 	candidate.MeetingCount = 0
 	now := time.Now()
-	candidate.ApplicationDate = primitive.DateTime(now.Unix())
-	//candidate.NextMeeting = primitive.DateTime((now.AddDate(0, 0, 1)).Unix()) // default 1 day
-	_, err = h.db.Collection("Candidates").InsertOne(context.TODO(), candidate)
+	candidate.ApplicationDate = &now
+	_, err = h.db.Collection("Candidates").InsertOne(context.Background(), candidate)
 
 	return err
 }
 
-//ReadCandidate (_id string) (Candidate, error)
 func (h *Handler) CreateUniqueId() string {
 
 	var _id string
@@ -55,7 +55,6 @@ func (h *Handler) CreateUniqueId() string {
 
 		filter := bson.M{"_id": _id}
 		err := h.db.Collection("Candidates").FindOne(context.Background(), filter).Decode(&candidate)
-
 		if err != nil {
 			break
 		}
@@ -63,7 +62,6 @@ func (h *Handler) CreateUniqueId() string {
 	return _id
 }
 
-//ReadCandidate (_id string) (Candidate, error)
 func (h *Handler) ReadCandidate(_id string) (*models.Candidate, error) {
 
 	var candidate models.Candidate
@@ -73,7 +71,6 @@ func (h *Handler) ReadCandidate(_id string) (*models.Candidate, error) {
 	return &candidate, err
 }
 
-//GetAssigneeByDepartment (_id string) (Candidate, error)
 func (h *Handler) GetAssigneeIdByDepartment(department string) (string, error) {
 
 	var assignee models.Assignee
@@ -84,7 +81,6 @@ func (h *Handler) GetAssigneeIdByDepartment(department string) (string, error) {
 	return assignee.ID, err
 }
 
-//DeleteCandidate (_id string) error
 func (h *Handler) DeleteCandidate(_id string) error {
 
 	filter := bson.M{"_id": _id}
@@ -92,21 +88,23 @@ func (h *Handler) DeleteCandidate(_id string) error {
 	return err
 }
 
-//ArrangeMeeting (_id string, nextMeetingTime *time.Time) error
-func (h *Handler) ArrangeMeeting(_id string, nextMeetingTime time.Time) error {
+func (h *Handler) ArrangeMeeting(_id string, nextMeetingTime *time.Time) error {
 
-	//assigneeID, err := h.GetAssigneeIdByDepartment(candidate.Department)
+	_, err := h.ReadCandidate(_id)
 
+	if err != nil {
+		log.Println("ID not found in DB")
+		return err
+	}
 	filter := bson.M{"_id": _id}
 	opt := bson.D{
 		{"$set", bson.D{{"next_meeting", primitive.DateTime(nextMeetingTime.Unix())}}},
 	}
-	_, err := h.db.Collection("Candidates").UpdateOne(context.Background(), filter, opt)
+	_, err = h.db.Collection("Candidates").UpdateOne(context.Background(), filter, opt)
 	//TODO: if id is not in db
 	return err
 }
 
-//CompleteMeeting (_id string) error
 func (h *Handler) CompleteMeeting(_id string) error {
 
 	var candidate models.Candidate
@@ -140,19 +138,17 @@ func (h *Handler) CompleteMeeting(_id string) error {
 	return err
 }
 
-//DenyCandidate (_id string) error
 func (h *Handler) DenyCandidate(_id string) error {
 
 	filter := bson.M{"_id": _id}
 	opt := bson.D{
-		{"$set", bson.D{{"status", "Denied"}, {}}},
+		{"$set", bson.D{{"status", "Denied"}}},
 	}
 	_, err := h.db.Collection("Candidates").UpdateOne(context.Background(), filter, opt)
 
 	return err
 }
 
-//AcceptCandidate(_id string) error
 func (h *Handler) AcceptCandidate(_id string) error {
 
 	var candidate models.Candidate
@@ -162,21 +158,21 @@ func (h *Handler) AcceptCandidate(_id string) error {
 
 	// if object is empty
 	if err != nil {
-		return err
+		return errors.New("ID not found in DB, candidate object is empty!")
 	}
 
 	if candidate.MeetingCount == 4 {
 		opt := bson.D{
-			{"$set", bson.D{{"status", "Accepted"}, {}}},
+			{"$set", bson.D{{"status", "Accepted"}}},
 		}
 		_, err = h.db.Collection("Candidates").UpdateOne(context.Background(), filter, opt)
-
+	} else {
+		return errors.New("Cannot accept candidate! Meeting count is less than 4")
 	}
 
 	return err
 }
 
-//FindAssigneeIDByName (name string) string
 func (h *Handler) FindAssigneeIDByName(name string) (*models.Assignee, error) {
 
 	var assignee models.Assignee
@@ -187,7 +183,6 @@ func (h *Handler) FindAssigneeIDByName(name string) (*models.Assignee, error) {
 }
 
 //bonus
-//FindAssigneesCandidates (id string) ([]Candidate, error)
 func (h *Handler) FindAssigneesCandidates(_id string) ([]*models.Candidate, error) {
 
 	filter := bson.M{"assignee": _id}

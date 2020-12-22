@@ -3,29 +3,27 @@ package main
 import (
 	"context"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"otsimo-backend-developer-task/functions"
-	"otsimo-backend-developer-task/handlers"
+	"otsimo-backend-developer-task/handler"
 	"otsimo-backend-developer-task/helper"
+	"otsimo-backend-developer-task/storage"
 	"time"
 )
 
 func Initialize(Addr string) *http.Server {
 
-	// https://github.com/tech-inscribed/struct-db/
-	//connectionString := fmt.Sprintf("mongodb://localhost:27017", user, password, dbname)
-	dbUri := "mongodb://localhost:27017"
-
+	dbUri, err := goDotEnvVariable("DBURI")
 	db, err := helper.ConnectDB(dbUri)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	h := handlers.NewHandler(functions.NewHandler(db))
+	h := handler.NewHandler(storage.NewHandler(db))
 
 	Router := mux.NewRouter()
 
@@ -34,26 +32,37 @@ func Initialize(Addr string) *http.Server {
 	Server := &http.Server{
 		Addr:         Addr,              // configure the bind address
 		Handler:      Router,            // set the default handler
-		ReadTimeout:  5 * time.Second,   // max time to read request from the client
-		WriteTimeout: 10 * time.Second,  // max time to write response to the client
-		IdleTimeout:  120 * time.Second, // max time for connections using TCP Keep-Alive
+		ReadTimeout:  50 * time.Second,  // max time to read request from the client
+		WriteTimeout: 100 * time.Second, // max time to write response to the client
+		IdleTimeout:  12 * time.Second,  // max time for connections using TCP Keep-Alive
 	}
 
 	return Server
 }
+func goDotEnvVariable(key string) (string, error) {
 
-func initializeRoutes(r *mux.Router, h *handlers.Handler) {
+	// load .env file
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Println("Error loading .env file")
+	}
+
+	return os.Getenv(key), err
+}
+func initializeRoutes(r *mux.Router, h *handler.Handler) {
 	r.HandleFunc("/candidate/{id}", h.ReadCandidate).Methods("GET")
 	r.HandleFunc("/candidate", h.CreateCandidate).Methods("POST")
 	r.HandleFunc("/candidate/{id}/delete", h.DeleteCandidate).Methods("GET")
 
-	r.HandleFunc("/meeting/arrange/{id}", h.ArrangeMeeting).Methods("POST")
+	r.HandleFunc("/meeting/arrange", h.ArrangeMeeting).Methods("POST")
 	r.HandleFunc("/meeting/complete/{id}", h.CompleteMeeting).Methods("GET")
 
 	r.HandleFunc("/candidate/{id}/accept", h.AcceptCandidate).Methods("GET")
 	r.HandleFunc("/candidate/{id}/deny", h.DenyCandidate).Methods("GET")
 
 	r.HandleFunc("/assignee", h.FindAssigneeIDByName).Methods("GET").Queries("name", "{name}")
+	r.HandleFunc("/assignee/{id}/candidates", h.FindAssigneesCandidates).Methods("GET")
 
 }
 

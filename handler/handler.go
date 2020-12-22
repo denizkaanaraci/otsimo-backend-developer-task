@@ -1,4 +1,4 @@
-package handlers
+package handler
 
 import (
 	"encoding/json"
@@ -6,26 +6,25 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"otsimo-backend-developer-task/functions"
 	"otsimo-backend-developer-task/helper"
 	"otsimo-backend-developer-task/models"
+	"otsimo-backend-developer-task/storage"
 	"strconv"
 	"time"
 )
 
-// Handler passes database connection to functions package
+// Handler passes database connection to storage package
 type Handler struct {
-	cHandler *functions.Handler
+	cHandler *storage.Handler
 }
 
 // NewBaseHandler returns a new BaseHandler
-func NewHandler(cHandler *functions.Handler) *Handler {
+func NewHandler(cHandler *storage.Handler) *Handler {
 	return &Handler{
 		cHandler: cHandler,
 	}
 }
 
-// CreateCandidate (candidate Candidate) (Candidate, error)
 func (h *Handler) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	var candidate models.Candidate
@@ -33,44 +32,56 @@ func (h *Handler) CreateCandidate(w http.ResponseWriter, r *http.Request) {
 
 	// decode error
 	if err != nil {
+		log.Println(err.Error())
 		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	err = candidate.Validate()
+
+	if err != nil {
+		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		log.Println("[ERROR] validating email", err)
+		return
+	}
 	// insert candidate model.
-	err = h.cHandler.CreateCandidate(candidate)
+	err = h.cHandler.CreateCandidate(&candidate)
 
 	// create error
 	if err != nil {
 		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		log.Println("[ERROR] error occured at create candidate", err)
 		return
 	}
 	helper.RespondWithJSON(w, http.StatusOK, candidate)
 }
 
-//ReadCandidate (_id string) (Candidate, error)
 func (h *Handler) ReadCandidate(w http.ResponseWriter, r *http.Request) {
 
 	var id, _ = mux.Vars(r)["id"]
 
 	candidate, err := h.cHandler.ReadCandidate(id)
 
-	log.Println(candidate, err)
-
 	if err != nil {
 		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		log.Println(err.Error())
 		return
 	}
 	helper.RespondWithJSON(w, http.StatusOK, candidate)
 }
 
-//DeleteCandidate (_id string) error
-//func DeleteCandidate(_id string) {
 func (h *Handler) DeleteCandidate(w http.ResponseWriter, r *http.Request) {
-	return
+	var id, _ = mux.Vars(r)["id"]
+
+	err := h.cHandler.DeleteCandidate(id)
+
+	if err != nil {
+		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
+		log.Println(err.Error())
+		return
+	}
+	helper.RespondWithJSON(w, http.StatusOK, "success")
 }
 
-//ArrangeMeeting (_id string, nextMeetingTime *time.Time) error
-//func ArrangeMeeting(_id string, nextMeetingTime *time.Time) {
 func (h *Handler) ArrangeMeeting(w http.ResponseWriter, r *http.Request) {
 
 	var payload map[string]interface{}
@@ -86,8 +97,7 @@ func (h *Handler) ArrangeMeeting(w http.ResponseWriter, r *http.Request) {
 	_time, _ := strconv.ParseInt(fmt.Sprint(payload["nextMeetingTime"]), 10, 64)
 
 	nextMeetingTime := time.Unix(_time, 0)
-
-	err = h.cHandler.ArrangeMeeting(_id, nextMeetingTime)
+	err = h.cHandler.ArrangeMeeting(_id, &nextMeetingTime)
 
 	if err != nil {
 		log.Println(err.Error())
@@ -97,8 +107,6 @@ func (h *Handler) ArrangeMeeting(w http.ResponseWriter, r *http.Request) {
 	helper.RespondWithJSON(w, http.StatusOK, "success")
 }
 
-//CompleteMeeting (_id string) error
-//func CompleteMeeting(_id string) {
 func (h *Handler) CompleteMeeting(w http.ResponseWriter, r *http.Request) {
 
 	var id, _ = mux.Vars(r)["id"]
@@ -114,7 +122,6 @@ func (h *Handler) CompleteMeeting(w http.ResponseWriter, r *http.Request) {
 	helper.RespondWithJSON(w, http.StatusOK, "success")
 }
 
-//DenyCandidate (_id string) error
 func (h *Handler) DenyCandidate(w http.ResponseWriter, r *http.Request) {
 	var params = mux.Vars(r)
 
@@ -123,13 +130,13 @@ func (h *Handler) DenyCandidate(w http.ResponseWriter, r *http.Request) {
 	err := h.cHandler.DenyCandidate(_id)
 
 	if err != nil {
+		log.Println(err.Error())
 		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	helper.RespondWithJSON(w, http.StatusOK, "success")
 }
 
-//AcceptCandidate(_id string) error
 func (h *Handler) AcceptCandidate(w http.ResponseWriter, r *http.Request) {
 	var params = mux.Vars(r)
 
@@ -138,13 +145,13 @@ func (h *Handler) AcceptCandidate(w http.ResponseWriter, r *http.Request) {
 	err := h.cHandler.AcceptCandidate(_id)
 
 	if err != nil {
+		log.Println(err.Error())
 		helper.RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	helper.RespondWithJSON(w, http.StatusOK, "success")
 }
 
-//FindAssigneeIDByName (name string) string
 func (h *Handler) FindAssigneeIDByName(w http.ResponseWriter, r *http.Request) {
 
 	var params = mux.Vars(r)
@@ -153,14 +160,25 @@ func (h *Handler) FindAssigneeIDByName(w http.ResponseWriter, r *http.Request) {
 	assignee, err := h.cHandler.FindAssigneeIDByName(name)
 
 	if err != nil {
+		log.Println(err.Error())
 		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	helper.RespondWithJSON(w, http.StatusOK, assignee)
 }
 
-//bonus
-//FindAssigneesCandidates (id string) ([]Candidate, error)
-func FindAssigneesCandidates(id string) {
-	return
+func (h *Handler) FindAssigneesCandidates(w http.ResponseWriter, r *http.Request) {
+	var id, _ = mux.Vars(r)["id"]
+
+	candidates, err := h.cHandler.FindAssigneesCandidates(id)
+
+	if err != nil {
+		log.Println(err.Error())
+		helper.RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	log.Println(candidates, err)
+
+	helper.RespondWithJSON(w, http.StatusOK, candidates)
 }

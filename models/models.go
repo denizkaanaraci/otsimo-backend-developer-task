@@ -2,31 +2,31 @@ package models
 
 import (
 	"github.com/go-playground/validator"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"regexp"
+	"time"
 )
 
 //Create Struct
 
 type Assignee struct {
-	ID         string `json:"_id,omitempty" bson:"_id,omitempty"`
+	ID         string `json:"_id" bson:"_id"`
 	Name       string `json:"name" bson:"name"`
 	Department string `json:"department" bson:"department"`
 }
 
 type Candidate struct {
-	ID           string             `json:"_id" bson:"_id" validate:"required"`
-	FirstName    string             `json:"first_name" bson:"first_name" validate:"required"`
-	LastName     string             `json:"last_name" bson:"last_name" validate:"required"`
-	Email        string             `json:"email" bson:"email" validate:"required,email"`
-	Department   string             `json:"department" bson:"department" validate:"required"`
-	University   string             `json:"university" bson:"university" validate:"required"`
-	Experience   bool               `json:"experience" bson:"experience" validate:"required"`
-	Status       string             `json:"status" bson:"status"`
-	MeetingCount int32              `json:"meeting_count" bson:"meeting_count"`
-	NextMeeting  primitive.DateTime `json:"next_meeting" bson:"next_meeting"`
-	Assignee     string             `json:"assignee" bson:"assignee"`
-	ApplicationDate primitive.DateTime `json:"application_date" bson:"application_date"`
+	ID              string    `json:"_id" bson:"_id"`
+	FirstName       string    `json:"first_name" bson:"first_name" validate:"required"`
+	LastName        string    `json:"last_name" bson:"last_name" validate:"required"`
+	Email           string    `json:"email" bson:"email" validate:"required,email"`
+	Department      string    `json:"department" bson:"department" validate:"required"`
+	University      string    `json:"university" bson:"university" validate:"required"`
+	Experience      bool      `json:"experience" bson:"experience"`
+	Status          string    `json:"status" bson:"status"`
+	MeetingCount    int32     `json:"meeting_count" bson:"meeting_count"`
+	NextMeeting     *time.Time `json:"next_meeting" bson:"next_meeting"`
+	Assignee        string    `json:"assignee" bson:"assignee"`
+	ApplicationDate *time.Time `json:"application_date" bson:"application_date"`
 }
 
 func (c *Candidate) Validate() error {
