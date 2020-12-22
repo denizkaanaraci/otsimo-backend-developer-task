@@ -1,4 +1,5 @@
 # otsimo-backend-developer-task
+task: https://gitlab.com/snippets/1964985
 
     Database and server configs can be changed in .env file
     
