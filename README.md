@@ -18,6 +18,9 @@ task: https://gitlab.com/snippets/1964985
         docker run -d -p 8080:8080 -e ADDR=0.0.0.0:8080 -e DBURI=mongodb://ip:port --name otsimo-app otsimo-app
         
         interactive: docker run -it --rm -p 8080:8080 -e ADDR=0.0.0.0:8080 -e DBURI=mongodb://ip:port --name otsimo-app otsimo-app
+## restore-db
+
+    mongorestore --host localhost:27017 --gzip --archive=data.gz --db Otsimo
 
 ## Functions
 
